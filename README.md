@@ -6,7 +6,7 @@ Monitor your Claude Code usage and costs directly in your VS Code status bar.
 
 - **Real-time cost tracking**: Shows today's Claude Code usage cost in the status bar
 - **Automatic updates**: Refreshes every 30 seconds to show current usage
-- **Detailed breakdown**: Click the status bar item to see detailed token usage and cost breakdown
+- **Detailed breakdown**: Click the status bar item to see a table with the last 7 days of usage data
 - **Zero configuration**: Works out of the box with your existing Claude Code setup
 
 ## Usage
@@ -15,7 +15,7 @@ Once installed, the extension will automatically:
 
 1. Display today's Claude Code usage cost in the status bar (e.g., "Today: $2.45")
 2. Update the display every 30 seconds
-3. Show a detailed breakdown when you click on the status bar item
+3. Show a detailed table with the last 7 days of usage when you click on the status bar item
 
 ### Commands
 
@@ -57,8 +57,10 @@ npm run package
 
 The extension reads Claude Code usage data from the local JSONL files stored in `~/.claude/projects/`. It aggregates the data to show:
 
-- Today's total cost
-- Token usage breakdown (input, output, cache creation, cache read)
+- Today's total cost in the status bar
+- Detailed table view showing the last 7 days of usage data
+- Daily breakdown of token usage (input, output, cache creation, cache read)
+- Cost per day and total costs
 - Real-time updates as you use Claude Code
 
 ## Privacy
