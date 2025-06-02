@@ -24,7 +24,7 @@ Once installed, the extension will automatically:
 
 ## Requirements
 
-- VS Code 1.74.0 or higher
+- VS Code 1.74.0 or higher (also works with Cursor)
 - Claude Code must be installed and have generated usage data in `~/.claude/projects/`
 
 ## Installation
