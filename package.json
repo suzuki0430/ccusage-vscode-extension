@@ -1,0 +1,59 @@
+{
+	"name": "ccusage-vscode",
+	"displayName": "Claude Code Usage Monitor",
+	"description": "Monitor your Claude Code usage and costs in VS Code status bar",
+	"version": "0.1.0",
+	"engines": {
+		"vscode": "^1.74.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"*"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "ccusage.refresh",
+				"title": "Refresh Usage Data",
+				"category": "Claude Code Usage"
+			},
+			{
+				"command": "ccusage.showDetails",
+				"title": "Show Usage Details",
+				"category": "Claude Code Usage"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"package": "vsce package",
+		"lint": "biome check .",
+		"format": "biome check --write .",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.74.0",
+		"@types/node": "16.x",
+		"typescript": "^5.0.0",
+		"@biomejs/biome": "^1.9.4",
+		"@vscode/vsce": "^2.15.0",
+		"cli-table3": "^0.6.5",
+		"consola": "^3.4.2",
+		"fast-sort": "^3.4.1",
+		"picocolors": "^1.1.1",
+		"tinyglobby": "^0.2.14",
+		"valibot": "^1.1.0"
+	},
+	"publisher": "ccusage",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ryoppippi/ccusage-vscode-extension.git"
+	},
+	"homepage": "https://github.com/ryoppippi/ccusage-vscode-extension#readme",
+	"license": "MIT"
+}
