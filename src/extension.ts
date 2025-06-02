@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { loadUsageData } from "./data-loader";
 import { calculateTotals } from "./calculate-cost";
+import Table from "cli-table3";
 
 let statusBarItem: vscode.StatusBarItem;
 let updateInterval: NodeJS.Timeout | undefined;
@@ -73,42 +74,93 @@ async function updateUsageDisplay() {
 
 async function showUsageDetails() {
 	try {
-		// Get today's date in YYYYMMDD format
-		const today = new Date();
-		const todayStr = today.toISOString().slice(0, 10).replace(/-/g, "");
+		// Load usage data for the last 7 days
+		const endDate = new Date();
+		const startDate = new Date();
+		startDate.setDate(endDate.getDate() - 6); // 7 days including today
 
-		// Load usage data for today only
 		const usageData = await loadUsageData({
-			since: todayStr,
-			until: todayStr,
+			since: startDate.toISOString().slice(0, 10).replace(/-/g, ""),
+			until: endDate.toISOString().slice(0, 10).replace(/-/g, ""),
 		});
 
 		if (usageData.length === 0) {
-			vscode.window.showInformationMessage("No Claude Code usage today");
+			vscode.window.showInformationMessage("No Claude Code usage in the last 7 days");
 			return;
 		}
 
-		const totals = calculateTotals(usageData);
+		// Group data by date
+		const dailyData = new Map<string, typeof usageData>();
+		for (const item of usageData) {
+			const date = item.date;
+			if (!dailyData.has(date)) {
+				dailyData.set(date, []);
+			}
+			dailyData.get(date)!.push(item);
+		}
 
-		// Create detailed breakdown
-		const details = [
-			`**Claude Code Usage - ${today.toLocaleDateString()}**`,
-			"",
-			`**Total Cost:** $${totals.totalCost.toFixed(2)}`,
-			"",
-			"**Token Usage:**",
-			`• Input tokens: ${totals.inputTokens.toLocaleString()}`,
-			`• Output tokens: ${totals.outputTokens.toLocaleString()}`,
-			`• Cache creation: ${totals.cacheCreationTokens.toLocaleString()}`,
-			`• Cache read: ${totals.cacheReadTokens.toLocaleString()}`,
-			"",
-			`**Total tokens:** ${(
-				totals.inputTokens +
-				totals.outputTokens +
-				totals.cacheCreationTokens +
-				totals.cacheReadTokens
-			).toLocaleString()}`,
-		].join("\\n");
+		// Create table
+		const table = new Table({
+			head: ['Date', 'Input', 'Output', 'Cache Create', 'Cache Read', 'Total Tokens', 'Cost (USD)'],
+			style: {
+				head: [],
+				border: []
+			}
+		});
+
+		let totalCost = 0;
+		let totalInput = 0;
+		let totalOutput = 0;
+		let totalCacheCreate = 0;
+		let totalCacheRead = 0;
+
+		// Sort dates and add rows
+		const sortedDates = Array.from(dailyData.keys()).sort().reverse();
+		for (const date of sortedDates) {
+			const dayData = dailyData.get(date)!;
+			const dayTotals = calculateTotals(dayData);
+			
+			totalCost += dayTotals.totalCost;
+			totalInput += dayTotals.inputTokens;
+			totalOutput += dayTotals.outputTokens;
+			totalCacheCreate += dayTotals.cacheCreationTokens;
+			totalCacheRead += dayTotals.cacheReadTokens;
+
+			const totalTokens = dayTotals.inputTokens + dayTotals.outputTokens + 
+						       dayTotals.cacheCreationTokens + dayTotals.cacheReadTokens;
+
+			// Date is already in YYYY-MM-DD format from data-loader
+			const formattedDate = date;
+			
+			table.push([
+				formattedDate,
+				dayTotals.inputTokens.toLocaleString(),
+				dayTotals.outputTokens.toLocaleString(),
+				dayTotals.cacheCreationTokens.toLocaleString(),
+				dayTotals.cacheReadTokens.toLocaleString(),
+				totalTokens.toLocaleString(),
+				`$${dayTotals.totalCost.toFixed(2)}`
+			]);
+		}
+
+		// Add separator and total row
+		if (sortedDates.length > 1) {
+			table.push([
+				'──────────────', '────────────', '────────────', 
+				'────────────', '────────────', '────────────', '──────────'
+			]);
+			
+			const grandTotal = totalInput + totalOutput + totalCacheCreate + totalCacheRead;
+			table.push([
+				'Total',
+				totalInput.toLocaleString(),
+				totalOutput.toLocaleString(),
+				totalCacheCreate.toLocaleString(),
+				totalCacheRead.toLocaleString(),
+				grandTotal.toLocaleString(),
+				`$${totalCost.toFixed(2)}`
+			]);
+		}
 
 		// Show details in a webview panel
 		const panel = vscode.window.createWebviewPanel(
@@ -118,14 +170,14 @@ async function showUsageDetails() {
 			{},
 		);
 
-		panel.webview.html = getWebviewContent(details);
+		panel.webview.html = getWebviewContent(table.toString());
 	} catch (error) {
 		vscode.window.showErrorMessage(`Error loading usage details: ${error}`);
 		console.error("Error showing usage details:", error);
 	}
 }
 
-function getWebviewContent(details: string): string {
+function getWebviewContent(tableContent: string): string {
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,19 +191,28 @@ function getWebviewContent(details: string): string {
             color: var(--vscode-foreground);
             background-color: var(--vscode-editor-background);
             padding: 20px;
-            line-height: 1.6;
+            line-height: 1.2;
         }
         pre {
-            white-space: pre-wrap;
+            font-family: 'SFMono-Regular', 'Monaco', 'Inconsolata', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+            font-size: 13px;
+            white-space: pre;
             background-color: var(--vscode-textBlockQuote-background);
-            padding: 15px;
+            padding: 20px;
             border-radius: 5px;
             border-left: 4px solid var(--vscode-textBlockQuote-border);
+            overflow-x: auto;
+        }
+        h2 {
+            color: var(--vscode-foreground);
+            margin-top: 0;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <pre>${details}</pre>
+    <h2>Claude Code Usage Details (Last 7 Days)</h2>
+    <pre>${tableContent}</pre>
 </body>
 </html>`;
 }
