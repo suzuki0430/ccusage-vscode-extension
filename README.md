@@ -9,6 +9,10 @@ Monitor your Claude Code usage and costs directly in your VS Code status bar.
 - **Detailed breakdown**: Click the status bar item to see a table with the last 7 days of usage data
 - **Zero configuration**: Works out of the box with your existing Claude Code setup
 
+![Status Bar](images/status-bar.png)
+
+![Usage Details](images/usage-details.png)
+
 ## Usage
 
 Once installed, the extension will automatically:
