@@ -3,7 +3,7 @@
   "displayName": "Claude Code Usage Monitor",
   "icon": "./images/icon.png",
   "description": "Monitor your Claude Code usage and costs in VS Code status bar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.74.0"
   },
