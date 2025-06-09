@@ -7,7 +7,8 @@ import * as v from "valibot";
 
 export const getDefaultClaudePath = () => path.join(homedir(), ".claude");
 
-export const UsageDataSchema = v.object({
+// Old format schema (before June 3, 2025)
+export const OldUsageDataSchema = v.object({
 	timestamp: v.string(),
 	message: v.object({
 		usage: v.object({
@@ -19,6 +20,22 @@ export const UsageDataSchema = v.object({
 	}),
 	costUSD: v.number(),
 });
+
+// New format schema (after June 3, 2025)
+export const NewUsageDataSchema = v.object({
+	timestamp: v.string(),
+	message: v.object({
+		usage: v.object({
+			input_tokens: v.number(),
+			output_tokens: v.number(),
+			cache_creation_input_tokens: v.optional(v.number()),
+			cache_read_input_tokens: v.optional(v.number()),
+		}),
+	}),
+});
+
+// Union schema that accepts both formats
+export const UsageDataSchema = v.union([OldUsageDataSchema, NewUsageDataSchema]);
 
 export type UsageData = v.InferOutput<typeof UsageDataSchema>;
 
@@ -77,6 +94,9 @@ export async function loadUsageData(
 		return [];
 	}
 
+	// Import the cost calculation function
+	const { calculateCostFromTokens } = await import('./calculate-cost');
+
 	const dailyMap = new Map<string, DailyUsage>();
 
 	for (const file of files) {
@@ -105,13 +125,27 @@ export async function loadUsageData(
 					totalCost: 0,
 				};
 
-				existing.inputTokens += data.message.usage.input_tokens || 0;
-				existing.outputTokens += data.message.usage.output_tokens || 0;
-				existing.cacheCreationTokens +=
-					data.message.usage.cache_creation_input_tokens || 0;
-				existing.cacheReadTokens +=
-					data.message.usage.cache_read_input_tokens || 0;
-				existing.totalCost += data.costUSD || 0;
+				const inputTokens = data.message.usage.input_tokens || 0;
+				const outputTokens = data.message.usage.output_tokens || 0;
+				const cacheCreationTokens = data.message.usage.cache_creation_input_tokens || 0;
+				const cacheReadTokens = data.message.usage.cache_read_input_tokens || 0;
+
+				existing.inputTokens += inputTokens;
+				existing.outputTokens += outputTokens;
+				existing.cacheCreationTokens += cacheCreationTokens;
+				existing.cacheReadTokens += cacheReadTokens;
+
+				// Use costUSD if available (old format), otherwise calculate from tokens (new format)
+				if ('costUSD' in data) {
+					existing.totalCost += data.costUSD || 0;
+				} else {
+					existing.totalCost += calculateCostFromTokens(
+						inputTokens,
+						outputTokens,
+						cacheCreationTokens,
+						cacheReadTokens
+					);
+				}
 
 				dailyMap.set(date, existing);
 			} catch (e) {
@@ -149,6 +183,9 @@ export async function loadSessionData(
 	if (files.length === 0) {
 		return [];
 	}
+
+	// Import the cost calculation function
+	const { calculateCostFromTokens } = await import('./calculate-cost');
 
 	const sessionMap = new Map<string, SessionUsage>();
 
@@ -190,13 +227,27 @@ export async function loadSessionData(
 					lastActivity: "",
 				};
 
-				existing.inputTokens += data.message.usage.input_tokens || 0;
-				existing.outputTokens += data.message.usage.output_tokens || 0;
-				existing.cacheCreationTokens +=
-					data.message.usage.cache_creation_input_tokens || 0;
-				existing.cacheReadTokens +=
-					data.message.usage.cache_read_input_tokens || 0;
-				existing.totalCost += data.costUSD || 0;
+				const inputTokens = data.message.usage.input_tokens || 0;
+				const outputTokens = data.message.usage.output_tokens || 0;
+				const cacheCreationTokens = data.message.usage.cache_creation_input_tokens || 0;
+				const cacheReadTokens = data.message.usage.cache_read_input_tokens || 0;
+
+				existing.inputTokens += inputTokens;
+				existing.outputTokens += outputTokens;
+				existing.cacheCreationTokens += cacheCreationTokens;
+				existing.cacheReadTokens += cacheReadTokens;
+
+				// Use costUSD if available (old format), otherwise calculate from tokens (new format)
+				if ('costUSD' in data) {
+					existing.totalCost += data.costUSD || 0;
+				} else {
+					existing.totalCost += calculateCostFromTokens(
+						inputTokens,
+						outputTokens,
+						cacheCreationTokens,
+						cacheReadTokens
+					);
+				}
 
 				// Keep track of the latest timestamp
 				if (data.timestamp > lastTimestamp) {

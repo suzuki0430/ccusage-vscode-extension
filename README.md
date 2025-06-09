@@ -67,9 +67,34 @@ The extension reads Claude Code usage data from the local JSONL files stored in 
 - Cost per day and total costs
 - Real-time updates as you use Claude Code
 
+### Pricing
+
+The extension calculates costs based on Claude Opus pricing (as of June 2025):
+
+- Input tokens: $15.00 per million tokens
+- Output tokens: $75.00 per million tokens
+- Cache creation tokens: $18.75 per million tokens
+- Cache read tokens: $1.50 per million tokens
+
+**Note**: The extension supports both legacy and current Claude Code data formats for compatibility.
+
 ## Privacy
 
 This extension only reads local Claude Code usage data from your machine. No data is sent to external services.
+
+## Changelog
+
+### v0.1.2 (Latest)
+
+- Fixed support for new Claude Code data format (post June 3, 2025)
+- Updated cache pricing to correct values ($18.75 for creation, $1.50 for read)
+- Now automatically calculates costs when costUSD field is not present
+
+### v0.1.1
+
+- Initial release
+- Basic cost monitoring and status bar display
+- 7-day usage history table
 
 ## License
 
